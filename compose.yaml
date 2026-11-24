@@ -1,0 +1,32 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"${NEO4J_PASSWORD:-trabalho123}\" 'RETURN 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-trabalho123}
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+  app:
+    build: .
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-trabalho123}
+    volumes:
+      - ./data:/app/data
+      - ./queries:/app/queries:ro
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    profiles: [tools]
+volumes:
+  neo4j_data:
